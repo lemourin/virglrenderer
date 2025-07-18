@@ -74,6 +74,8 @@
 #include "vrend_renderer.h"
 #include "vrend_video.h"
 
+#include <EGL/eglext_angle.h>
+
 struct vrend_context;
 
 struct vrend_video_context {
@@ -164,21 +166,15 @@ static int sync_dmabuf_to_video_buffer(struct vrend_video_buffer *buf,
             continue;
         }
 
-        /* dmabuf -> eglimage */
-        if (EGL_NO_IMAGE_KHR == plane->egl_image) {
-            EGLint img_attrs[16] = {
-                EGL_LINUX_DRM_FOURCC_EXT,       dmabuf->planes[i].drm_format,
-                EGL_WIDTH,                      dmabuf->width / (i + 1),
-                EGL_HEIGHT,                     dmabuf->height / (i + 1),
-                EGL_DMA_BUF_PLANE0_FD_EXT,      dmabuf->planes[i].fd,
-                EGL_DMA_BUF_PLANE0_OFFSET_EXT,  dmabuf->planes[i].offset,
-                EGL_DMA_BUF_PLANE0_PITCH_EXT,   dmabuf->planes[i].pitch,
-                EGL_NONE
-            };
-
-            plane->egl_image = eglCreateImageKHR(eglGetCurrentDisplay(),
-                    EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, NULL, img_attrs);
+        if (EGL_NO_IMAGE_KHR != plane->egl_image) {
+            eglDestroyImageKHR(eglGetCurrentDisplay(), plane->egl_image);
         }
+
+        /* dmabuf -> eglimage */
+        plane->egl_image = eglCreateImageKHR(
+            eglGetCurrentDisplay(), EGL_NO_CONTEXT, EGL_METAL_TEXTURE_ANGLE,
+            dmabuf->planes[i].mtl_texture,
+            /*attrib_list=*/NULL);
 
         if (EGL_NO_IMAGE_KHR == plane->egl_image) {
             virgl_error("%s: create egl image failed\n", __func__);
@@ -354,8 +350,8 @@ static struct virgl_video_callbacks video_callbacks = {
 
 int vrend_video_init(int drm_fd)
 {
-    if (drm_fd < 0)
-        return -1;
+    // if (drm_fd < 0)
+    //     return -1;
 
     return virgl_video_init(drm_fd, &video_callbacks, 0);
 }
