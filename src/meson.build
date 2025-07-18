@@ -127,9 +127,14 @@ proxy_sources = [
 ]
 
 video_sources = [
-   'vrend/virgl_video.c',
    'vrend/vrend_video.c',
 ]
+
+if with_host_darwin
+   video_sources += 'vrend/virgl_video_macos.mm'
+else
+   video_sources += 'vrend/virgl_video.c'
+endif
 
 virgl_depends = [
    gallium_dep,
@@ -193,6 +198,7 @@ endif
 if with_video
   virgl_sources += video_sources
   virgl_depends += [libva_dep, libvadrm_dep]
+  virgl_depends += dependency('appleframeworks', modules : ['CoreVideo', 'CoreMedia', 'VideoToolbox', 'Foundation', 'Metal'])
 endif
 
 if with_host_windows

@@ -54,6 +54,13 @@ if cc.get_id() == 'gcc' and cc.version().version_compare('< 4.1')
   error('When using GCC, version 4.1 or later is required.')
 endif
 
+with_host_windows = host_machine.system() == 'windows'
+with_host_darwin = host_machine.system() == 'darwin'
+
+if with_host_darwin
+    add_languages('objcpp', required: true, native: false)
+endif
+
 warnings = [
    '-Werror=enum-int-mismatch',
    '-Werror=implicit-function-declaration',
@@ -107,7 +114,8 @@ endif
 
 with_drm_renderers = drm_renderers.length() > 0
 
-libdrm_dep = dependency('libdrm', version : '>=2.4.50', required: with_drm_renderers or get_option('video'))
+libdrm_dep = dependency('libdrm', version : '>=2.4.50',
+                        required: with_drm_renderers or (get_option('video') and not with_host_darwin))
 libdrm_amdgpu_dep = dependency('libdrm_amdgpu', version : '>=2.4.121', required: with_drm_amdgpu)
 conf_data.set('ENABLE_DRM', libdrm_dep.found())
 drm_uapi_dep = declare_dependency(
@@ -160,9 +168,6 @@ endif
 if cc.has_header('dlfcn.h')
    conf_data.set('HAVE_DLFCN_H', 1)
 endif
-
-with_host_windows = host_machine.system() == 'windows'
-with_host_darwin = host_machine.system() == 'darwin'
 
 if thread_dep.found() and not with_host_windows
   conf_data.set('HAVE_PTHREAD', 1)
@@ -380,8 +385,8 @@ if with_video
      error('video require EGL, but it is not available')
   endif
   conf_data.set('ENABLE_VIDEO', 1)
-  libva_dep = dependency('libva')
-  libvadrm_dep = dependency('libva-drm')
+  libva_dep = dependency('libva', required: not with_host_darwin)
+  libvadrm_dep = dependency('libva-drm', required: not with_host_darwin)
 endif
 
 with_tests = get_option('tests')

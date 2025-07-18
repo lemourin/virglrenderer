@@ -50,6 +50,10 @@
 #include "pipe/p_video_enums.h"
 #include "util/u_formats.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct virgl_video_codec;
 struct virgl_video_buffer;
 union virgl_caps;
@@ -96,6 +100,7 @@ struct virgl_video_dma_buf {
         int modifier;
         uint32_t offset;
         uint32_t pitch;
+        void* mtl_texture;
     } planes[4];
 };
 
@@ -158,6 +163,10 @@ int virgl_video_encode_bitstream(struct virgl_video_codec *codec,
                                  const union virgl_picture_desc *desc);
 int virgl_video_end_frame(struct virgl_video_codec *codec,
                           struct virgl_video_buffer *target);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* VIRGL_VIDEO_H */
 
